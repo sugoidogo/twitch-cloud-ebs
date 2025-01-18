@@ -92,8 +92,8 @@ async function oauth2(request, env) {
 
 	const client_secret = await env[requestBody.get('client_id')]
 
-	if (client_secret === null) {
-		return newResponse(null, { status: 403 })
+	if (!client_secret) {
+		return newResponse(null, { status: 403,statusText:'unauthorized client' })
 	}
 
 	requestBody.append('client_secret', client_secret)
