@@ -1,14 +1,3 @@
-try{
-    const sentry=await import('https://cdn.jsdelivr.net/npm/@sentry/browser@8/+esm')
-    sentry.init({
-        dsn:'https://1982d0155a1144f4a8c5bac6578572e7@app.glitchtip.com/8990',
-        environment:location.hostname,
-        release:"8.1.0"
-    })
-}catch(e){
-    console.warn('automatic error reporting failed to load',e)
-}
-
 import TwitchAuth from "./TwitchAuth.mjs";
 
 export default class SugoiAuthProvider {
