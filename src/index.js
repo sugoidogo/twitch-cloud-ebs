@@ -77,11 +77,11 @@ async function validate(request, env) {
  */
 async function oauth2(request, env) {
 	if (url.pathname !== '/oauth2/token') {
-		return newResponse(null, { status: 400 })
+		return newResponse(null, { status: 404 })
 	}
 
-	if (request.headers.get('content-type')!='multipart/form-data'){
-		return newResponse(null, { status: 400 })
+	if (!request.headers.get('content-type').includes('form')){
+		return newResponse(null, { status: 400, statusText:'content type must be form data' })
 	}
 
 	const requestBody = await request.formData()
