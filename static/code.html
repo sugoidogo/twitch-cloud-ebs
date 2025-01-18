@@ -1,0 +1,15 @@
+<body>
+    <h1>Redirecting...</h1>
+</body>
+<script>
+    const searchParams=new URLSearchParams(location.search)
+    if(searchParams.has('client_id')){
+        searchParams.set('response_type','code')
+        const url=new URL('https://id.twitch.tv/oauth2/authorize')
+        url.search=searchParams
+        location.assign(url.href+'&redirect_uri='+location.origin.replace('127.0.0.1','localhost')+location.pathname)
+    }else{
+        opener.postMessage(Object.fromEntries(searchParams),'*')
+        close()
+    }
+</script>
