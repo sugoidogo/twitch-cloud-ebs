@@ -220,7 +220,7 @@ export default {
 		}
 		url = new URL(request.url)
 		if (env.serve_static) {
-			const response = await serve_static(request.clone(), env)
+			const response = await serve_static(url, env)
 			if (response.ok) {
 				return response
 			}
