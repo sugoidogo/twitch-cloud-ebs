@@ -1,5 +1,5 @@
 let localStorage=globalThis.localStorage
-import('https://cdn.jsdelivr.net/npm/localforage@1/dist/localforage.min.js')
+import('https://cdn.jsdelivr.net/npm/localforage@1/+esm')
 .then(module=>module.default)
 .then(localforage=>{localStorage=localforage.createInstance({name:import.meta.url})})
 .catch(e=>console.warn('localforage failed, using localStorage',e))
