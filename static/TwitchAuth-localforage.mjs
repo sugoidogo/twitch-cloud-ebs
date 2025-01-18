@@ -189,7 +189,10 @@ export default class TwitchAuth {
      * get the cached token
      * @returns {Promise<TwitchToken>}
      */
-    async getLocalToken(user_id=await localStorage.key(0)){
+    async getLocalToken(user_id){
+        if(!user_id){
+            user_id=await localStorage.key(0)
+        }
         const data=await localStorage.getItem(user_id)||globalThis.localStorage.getItem(import.meta.url)
         if(!data){
             return null
