@@ -19,8 +19,8 @@ export async function fetch_tokens(client_id,code,redirect_uri=location.origin+l
 
 export function get_headers(tokens){
     return {
-        'Authorization':'Bearer '+token.access_token,
-        'Client-ID':token.client_id
+        'Authorization':'Bearer '+tokens.access_token,
+        'Client-ID':tokens.client_id
     }
 }
 
@@ -28,6 +28,7 @@ export async function validate_tokens(tokens){
     const validation=await TwitchAuth.validateToken(tokens.access_token)
     Object.assign(tokens,validation)
     tokens.scope=validation.scopes
+    tokens.auth_headers=get_headers(tokens)
     token=tokens
     return token
 }
