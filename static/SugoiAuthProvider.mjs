@@ -1,4 +1,4 @@
-import TwitchAuth from "./TwitchAuth.mjs";
+import * as TwitchAuth from "./TwitchAuth.mjs";
 
 function getTwurpleProxy(token){
     return new Proxy(token,{
@@ -8,33 +8,57 @@ function getTwurpleProxy(token){
     })
 }
 
+/**
+ * @param {import("./TwitchAuth.mjs").TwitchToken} token 
+ * @param  {...string} scopes 
+ */
+function hasScopes(token,...scopes){
+    for(const scope of scopes){
+        if(!token.scope.includes(scope)){
+            return false
+        }
+    }
+    return true
+}
+
 export default class SugoiAuthProvider {
 
-    /** @type {TwitchAuth} */
-    #auth;
+    /** @type {TwitchToken} */
+    #token;
 
     /** @type {String} */
     clientId;
 
     constructor(client_id){
-        this.#auth=new TwitchAuth(client_id)
         this.clientId=client_id
     }
 
     /**
+     * get a new token
      * @param  {String[]} scopes 
      * @returns {Promise<import("./TwitchAuth.mjs").TwitchToken>}
      */
-    addUser(...scopes){
-        return this.#auth.getToken(...scopes).then(getTwurpleProxy)
+    async addUser(...scopes){
+        if(hasScopes(this.#token,scopes)){
+            return this.#token
+        }
+        return TwitchAuth.getUserToken(this.clientId,...scopes).then(getTwurpleProxy)
     }
 
+    /**
+     * use an existing token
+     * @param {import("./TwitchAuth.mjs").TwitchToken} token 
+     * @returns {import("./TwitchAuth.mjs").TwitchToken}
+     */
     addUserForToken(token){
-        return this.#auth.setToken(token).then(getTwurpleProxy)
+        if(token.refresh_token){
+            return TwitchAuth.refreshToken(token.refresh_token).then(getTwurpleProxy)
+        }
+        return TwitchAuth.validateToken(token.access_token).then(getTwurpleProxy)
     }
 
     removeUser(){
-        return this.#auth.resetLocalToken()
+        this.#token=null
     }
 
     /**
@@ -43,22 +67,12 @@ export default class SugoiAuthProvider {
      * @returns {Promise<import("./TwitchAuth.mjs").TwitchToken | null>}
      */
     getAccessTokenForUser(user,...scopeSets){
-        const scopes=new Set()
-        for(const scopeSet of scopeSets){
-            for(const scope of scopeSet){
-                scopes.add(scope)
+        for(const scopes of scopeSets){
+            if(hasScopes(this.#token,scopes)){
+                return this.#token
             }
         }
-        return this.#auth.getToken(...scopes).then(getTwurpleProxy)
-        .then(token=>{
-            if(token.user_id!=user){
-                throw 'got access token for wrong user'
-            }
-            return token
-        }).catch(error=>{
-            console.warn(error)
-            return null
-        })
+        return this.addUser(...scopeSets[0])
     }
 
     /**
@@ -66,15 +80,7 @@ export default class SugoiAuthProvider {
      * @returns {Promise<import("./TwitchAuth.mjs").TwitchToken>}
      */
     getAnyAccessToken(user){
-        return this.#auth.getToken().then(getTwurpleProxy)
-        .then(token=>{
-            if(token.user_id!=user){
-                throw 'got access token for wrong user'
-            }
-            return token.then(getTwurpleProxy)
-        }).catch(error=>{
-            return this.#auth.getAppToken().then(getTwurpleProxy)
-        })
+        return this.#token || TwitchAuth.getAppToken(this.clientId)
     }
 
     /**
@@ -82,7 +88,7 @@ export default class SugoiAuthProvider {
      * @returns {String[]}
      */
     getCurrentScopesForUser(user){
-        return this.#auth.getLocalToken().scope
+        return this.#token.scope
     }
 
     /**
@@ -90,10 +96,6 @@ export default class SugoiAuthProvider {
      * @returns {Promise<import("./TwitchAuth.mjs").TwitchToken>}
      */
     refreshAccessTokenForUser(user){
-        const token=this.#auth.getLocalToken()
-        if(token.user_id!=user){
-            throw 'got access token for wrong user'
-        }
-        return this.#auth.getFreshToken(token).then(getTwurpleProxy)
+        return TwitchAuth.refreshToken(this.#token.refresh_token)
     }
 }

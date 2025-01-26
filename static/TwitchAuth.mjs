@@ -1,12 +1,17 @@
+import fetch_retry from 'https://cdn.jsdelivr.net/npm/fetch-retry/+esm'
+const fetch = fetch_retry(globalThis.fetch, { retries: 10, retryDelay: attempts => attempts * 1000 })
+
 /**
  * @typedef {Object} TwitchToken
  * @property {String} access_token
  * @property {Number} expires_in
+ * @property {Number} obtainment_timestamp
  * @property {String} token_type
- * @property {String} [refresh_token]
- * @property {Array<String>} [scope]
- * @property {Number} [obtainment_timestamp]
  * @property {Number} [user_id]
+ * @property {Array<String>} [scope]
+ * @property {String} [refresh_token]
+ * @property {String} [login]
+ * @property {String} [client_id]
  */
 
 /**
@@ -15,252 +20,173 @@
  * @property {String} scope
  */
 
+const redirect_uri = location.href.split('?')[0]
+const proxy_uri = new URL('/oauth2/token', import.meta.url)
+
 /**
- * @param {RequestInfo | URL} input
- * @param {RequestInit} init
- * @returns {Promise<Response>}
+ * Timestamp and return the token
+ * @param {TwitchToken} token 
+ * @returns {TwitchToken}
  */
-function fetch(input,init=undefined){
-    return window.fetch(input,init).catch(async error=>{
-        if(error.message==="Failed to fetch"){
-            await new Promise(function(resolve,reject){
-                setTimeout(resolve,1000)
-            })
-            return fetch(input,init)
-        }else{
-            throw error
+function stamp(token) {
+    token.obtainment_timestamp = Date.now()
+    return token
+}
+
+/**
+ * https://dev.twitch.tv/docs/authentication/getting-tokens-oauth/#client-credentials-grant-flow
+ * @param {String} client_id 
+ * @returns {Promise<TwitchToken>}
+ */
+export function getAppToken(client_id) {
+    const searchParams = new URLSearchParams({
+        client_id: client_id,
+        grant_type: 'client_credentials'
+    })
+    return fetch(proxy_uri, {
+        method: 'POST',
+        body: searchParams.toString(),
+        headers: { 'content-type': 'application/x-www-form-urlencoded' }
+    }).then(async function (response) {
+        if (!response.ok) {
+            throw await response.json()
         }
+        const token = await response.json()
+        return stamp(token)
     })
 }
 
-export default class TwitchAuth {
-
-    static #redirect_uri=new URL('/code.html',import.meta.url)
-    static #proxy_uri=new URL('/oauth2/token',import.meta.url)
-
-    /**
-     * https://dev.twitch.tv/docs/authentication/getting-tokens-oauth/#client-credentials-grant-flow
-     * @param {String} client_id 
-     * @returns {Promise<TwitchToken>}
-     */
-    static getAppToken(client_id){
-        const searchParams=new URLSearchParams({
-            client_id:client_id,
-            grant_type:'client_credentials'
-        })
-        return fetch(this.#proxy_uri,{
-            method:'POST',
-            body:searchParams.toString(),
-            headers:{'content-type':'application/x-www-form-urlencoded'}
-        }).then(async function(response){
-            if(!response.ok){
-                throw await response.json()
-            }
-            return await response.json()
-        })
-    }
-
-    /**
-     * https://dev.twitch.tv/docs/authentication/getting-tokens-oauth/#get-the-user-to-authorize-your-app
-     * @param {String} client_id 
-     * @param {Array<String>} scopes 
-     * @returns {Promise<AuthCode>}
-     */
-    static requestAuthCode(client_id,...scopes){
-        console.debug('requesting authorization code')
-        const url=new URL(this.#redirect_uri)
-        url.searchParams.append('client_id',client_id)
-        url.searchParams.append('scope',scopes.join(' '))
-        if(!open(url,'_blank')){
-            throw new Error('failed to open authorization window')
-        }
-        return new Promise(function(resolve,reject){
-            addEventListener("message",function onMessage(event){
-                if(!(event.origin===new URL(import.meta.url).origin)){
-                    return
-                }
-                removeEventListener('message',onMessage)
-                if('code' in event.data){
-                    resolve(event.data)
-                }else{
-                    reject(event.data)
-                }
-            })
-        })
-    }
-
-    /**
-     * https://dev.twitch.tv/docs/authentication/getting-tokens-oauth/#use-the-authorization-code-to-get-a-token
-     * @param {String} client_id 
-     * @param {String} code 
-     * @returns {Promise<TwitchToken>}
-     */
-    static exchangeCode(client_id,code){
-        console.debug('exchanging authorization code')
-        const searchParams=new URLSearchParams({
-            client_id:client_id,
-            code:code,
-            grant_type:'authorization_code'
-        })
-        return fetch(this.#proxy_uri,{
-            method:'POST',
-            body:searchParams.toString()+'&redirect_uri='+this.#redirect_uri,
-            headers:{'content-type':'application/x-www-form-urlencoded'}
-        }).then(async function(response){
-            if(!response.ok){
-                throw await response.json()
-            }
-            return await response.json()
-        })
-    }
-
-    /**
-     * https://dev.twitch.tv/docs/authentication/validate-tokens/#how-to-validate-a-token
-     * @param {String} access_token 
-     * @returns {Promise<TwitchToken>}
-     */
-    static validateToken(access_token){
-        console.debug('validating token')
-        return fetch('https://id.twitch.tv/oauth2/validate',{
-            headers:{authorization:'OAuth '+access_token}
-        }).then(async response=>{
-            if(!response.ok){
-                throw await response.json()
-            }
-            return await response.json()
-        })
-    }
-
-    /**
-     * https://dev.twitch.tv/docs/authentication/refresh-tokens/#how-to-use-a-refresh-token
-     * @param {String} client_id 
-     * @param {String} refresh_token 
-     * @returns {Promise<TwitchToken>}
-     */
-    static refreshToken(client_id,refresh_token){
-        console.debug('refreshing token')
-        const searchParams=new URLSearchParams({
-            client_id:client_id,
-            grant_type:'refresh_token',
-            refresh_token:refresh_token
-        })
-        return fetch(this.#proxy_uri,{
-            method:'POST',
-            body:searchParams.toString(),
-            headers:{'content-type':'application/x-www-form-urlencoded'}
-        }).then(async function(response){
-            if(!response.ok){
-                throw await response.json()
-            }
-            return await response.json()
-        })
-    }
-
-    /**
-     * validate, update, and return an existing token
-     * @param {TwitchToken} token 
-     * @returns {Promise<TwitchToken>}
-     */
-    static getTokenWithValidation(token){
-        return this.validateToken(token.access_token)
-        .then(validation=>{
-            Object.assign(validation,token)
-            validation.obtainment_timestamp=Date.now()
-            return validation
-        })
-    }
-
-    constructor(client_id){
-        this.client_id=client_id
-    }
-
-    /**
-     * get the cached token
-     * @returns {TwitchToken}
-     */
-    getLocalToken(){
-        const data=localStorage.getItem(import.meta.url)
-        if(!data){
-            return null
-        }
-        return JSON.parse(data)
-    }
-
-    resetLocalToken(){
-        return localStorage.removeItem(import.meta.url)
-    }
-
-    /**
-     * Do whatever it takes to get a token
-     * @param {Array<String>} scopes 
-     * @returns {Promise<TwitchToken>}
-     */
-    async getToken(...scopes){
-        const token=this.getLocalToken()
-        if(!token){
-            console.debug('no local token, requesting new token')
-            return this.getNewToken(...scopes)
-        }
-        scopes=scopes.join(' ').split(' ')
-        for(const scope of scopes){
-            if(scope===''){
-                continue
-            }
-            if(!token.scope.includes(scope)){
-                console.debug('token is missing '+scope+', requesting new token')
-                return this.getNewToken(...scopes)
-            }
-        }
-        const expiry=token.obtainment_timestamp+(token.expires_in*1000)-(60*1000)
-        if(expiry<Date.now()){
-            return this.getFreshToken(token)
-        }
-        return token
-    }
-
-    /**
-     * Interactively request a new token
-     * @param {Array<String>} scopes 
-     * @returns {Promise<TwitchToken>}
-     */
-    getNewToken(...scopes){
-        return TwitchAuth.requestAuthCode(this.client_id,...scopes)
-        .then(response=>TwitchAuth.exchangeCode(this.client_id,response.code))
-        .then(this.setToken)
-    }
-
-    /**
-     * Non-interactively request a new token, falling back to interactive mode
-     * @param {TwitchToken} token 
-     * @returns {Promise<TwitchToken>}
-     */
-    getFreshToken(token){
-        return TwitchAuth.refreshToken(this.client_id,token.refresh_token)
-        .then(this.setToken).catch((error)=>{
-            console.warn(error)
-            return this.getNewToken(...token.scope)
-        })
-    }
-
-    /**
-     * validate, update, store, and return an existing token
-     * @param {TwitchToken} token 
-     * @returns {Promise<TwitchToken>}
-     */
-    setToken(token){
-        return TwitchAuth.getTokenWithValidation(token)
-        .then(token=>{
-            localStorage.setItem(import.meta.url,JSON.stringify(token))
-            return token
-        })
-    }
-
-    /**
-     * Get a new app token with validation
-     * @returns {Promise<TwitchToken>}
-     */
-    getAppToken(){
-        return TwitchAuth.getAppToken(this.client_id)
-        .then(TwitchAuth.getTokenWithValidation)
-    }
+/**
+ * https://dev.twitch.tv/docs/authentication/getting-tokens-oauth/#implicit-grant-flow
+ * @param {String} client_id 
+ * @param {Array<String>|String} scopes 
+ * @returns {Promise<AuthCode>}
+ */
+export function requestAccessToken(client_id, ...scopes) {
+    console.debug('requesting access token')
+    const url = new URL('https://id.twitch.tv/oauth2/authorize')
+    url.searchParams.append('response_type','token')
+    url.searchParams.append('client_id', client_id)
+    url.searchParams.append('scope', scopes.join(' '))
+    location.assign(url+'&redirect_uri='+redirect_uri)
 }
+
+/**
+ * https://dev.twitch.tv/docs/authentication/getting-tokens-oauth/#get-the-user-to-authorize-your-app
+ * @param {String} client_id 
+ * @param {Array<String>|String} scopes 
+ * @returns {Promise<AuthCode>}
+ */
+export function requestAuthCode(client_id, ...scopes) {
+    console.debug('requesting authorization code')
+    const url = new URL('https://id.twitch.tv/oauth2/authorize')
+    url.searchParams.append('response_type','code')
+    url.searchParams.append('client_id', client_id)
+    url.searchParams.append('scope', scopes.join(' '))
+    location.assign(url+'&redirect_uri='+redirect_uri)
+}
+
+/**
+ * https://dev.twitch.tv/docs/authentication/getting-tokens-oauth/#use-the-authorization-code-to-get-a-token
+ * @param {String} client_id 
+ * @param {String} code 
+ * @returns {Promise<TwitchToken>}
+ */
+export function exchangeCode(client_id, code) {
+    console.debug('exchanging authorization code')
+    const searchParams = new URLSearchParams({
+        client_id: client_id,
+        code: code,
+        grant_type: 'authorization_code'
+    })
+    return fetch(proxy_uri, {
+        method: 'POST',
+        body: searchParams.toString() + '&redirect_uri=' + redirect_uri,
+        headers: { 'content-type': 'application/x-www-form-urlencoded' }
+    }).then(async function (response) {
+        if (!response.ok) {
+            throw await response.json()
+        }
+        const token = await response.json()
+        return stamp(token)
+    })
+}
+
+/**
+ * https://dev.twitch.tv/docs/authentication/validate-tokens/#how-to-validate-a-token
+ * @param {String} access_token 
+ * @returns {TwitchToken}
+ */
+export function validateToken(access_token) {
+    console.debug('validating token')
+    return fetch('https://id.twitch.tv/oauth2/validate', {
+        headers: { authorization: 'OAuth ' + access_token }
+    }).then(async response => {
+        if (!response.ok) {
+            throw await response.json()
+        }
+        /** @type {TwitchToken} */
+        const token=await response.json()
+        token.access_token=access_token
+        token.scope=token.scopes
+        delete token.scopes
+        token.token_type='bearer'
+        return stamp(token)
+    })
+}
+
+/**
+ * https://dev.twitch.tv/docs/authentication/refresh-tokens/#how-to-use-a-refresh-token
+ * @param {String} client_id 
+ * @param {String} refresh_token 
+ * @returns {Promise<TwitchToken>}
+ */
+export function refreshToken(client_id, refresh_token) {
+    console.debug('refreshing token')
+    const searchParams = new URLSearchParams({
+        client_id: client_id,
+        grant_type: 'refresh_token',
+        refresh_token: refresh_token
+    })
+    return fetch(proxy_uri, {
+        method: 'POST',
+        body: searchParams.toString(),
+        headers: { 'content-type': 'application/x-www-form-urlencoded' }
+    }).then(async function (response) {
+        if (!response.ok) {
+            throw await response.json()
+        }
+        return await response.json()
+    })
+}
+
+/**
+ * This function checks the url search parameters and hash for an auth code,
+ * refresh token, access token, or error message, in that order,
+ * and if it finds none of those, starts the auth code grant flow.
+ * https://dev.twitch.tv/docs/authentication/getting-tokens-oauth/#authorization-code-grant-flow
+ * @param {String} client_id 
+ * @returns {TwitchToken}
+ */
+export function getUserToken(client_id,...scopes){
+    const params=new URLSearchParams(location.search+'&'+location.hash.substring(1))
+    if(params.has('code')){
+        const code=params.get('code')
+        history.replaceState(null,'',redirect_uri)
+        return exchangeCode(client_id,code)
+    }
+    if(params.has('refresh_token')){
+        return refreshToken(client_id,params.get('refresh_token'))
+    }
+    if(params.has('access_token')){
+        return validateToken(params.get('access_token'))
+    }
+    if(params.has('error')){
+        const error_message=params.get('error')+': '+params.get('error_description')
+        history.replaceState(null,'',redirect_uri)
+        throw new Error(error_message)
+    }
+    return requestAuthCode(client_id,...scopes)
+}
+
+export default getUserToken
