@@ -13,6 +13,9 @@ function getTwurpleProxy(token){
  * @param  {...string} scopes 
  */
 function hasScopes(token,...scopes){
+    if(!token){
+        return false
+    }
     for(const scope of scopes){
         if(!token.scope.includes(scope)){
             return false
