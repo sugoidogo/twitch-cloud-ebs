@@ -3,7 +3,7 @@ import * as TwitchAuth from './TwitchAuth.mjs'
 let token=null;
 
 export function request_auth(client_id,scope,redirect_uri=location.origin+location.pathname){
-    return TwitchAuth.requestAuthCode(client_id,scope.split(' '))
+    return TwitchAuth.requestAuthCode(client_id,...scope.split(' '))
 }
 
 export function get_url_params(){
@@ -54,7 +54,7 @@ export function set_refresh_timeout(client_id,tokens){
 }
 
 export async function get_tokens(client_id,scope=null,redirect_uri=location.origin+location.pathname,auth_return=false){
-    token=await TwitchAuth.getUserToken(client_id,scope.split(' ')).then(validate_tokens)
+    token=await TwitchAuth.getUserToken(client_id,...scope.split(' ')).then(validate_tokens)
     set_refresh_timeout(client_id,token)
     return token
 }
