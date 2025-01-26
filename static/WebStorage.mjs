@@ -67,12 +67,14 @@ export default class WebStorage {
                 }
             }
         }
-        return this.#fetch(resource, options).then(
-            response => {
+        return this.#fetch(resource, options)
+            .then(async response => {
+                if (response.status >= 500) {
+                    throw new Error(response.statusText + '\n' + await response.text())
+                }
                 this.#cache.put(resource, response)
                 return response
-            },
-            error => {
+            }).catch(error => {
                 console.warn(error)
                 return this.#cache.match(resource)
             }
