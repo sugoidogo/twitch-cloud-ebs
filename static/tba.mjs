@@ -27,7 +27,7 @@ export function get_headers(tokens){
 export async function validate_tokens(tokens){
     const validation=await TwitchAuth.validateToken(tokens.auth_token)
     Object.assign(tokens,validation)
-    tokens.scopes=validation.scope
+    tokens.scope=validation.scopes
     token=tokens
     return token
 }
