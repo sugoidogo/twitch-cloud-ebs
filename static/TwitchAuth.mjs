@@ -1,5 +1,8 @@
 import fetch_retry from 'https://cdn.jsdelivr.net/npm/fetch-retry/+esm'
-const fetch = fetch_retry(globalThis.fetch, { retries: 10, retryDelay: attempts => attempts * 1000 })
+const fetch = fetch_retry(globalThis.fetch, {
+    retries: 10,
+    retryDelay: attempts => attempts * 1000
+})
 
 /**
  * @typedef {Object} TwitchToken
@@ -20,7 +23,7 @@ const fetch = fetch_retry(globalThis.fetch, { retries: 10, retryDelay: attempts 
  * @property {String} scope
  */
 
-const redirect_uri = location.origin+location.pathname
+const redirect_uri = location.origin + location.pathname
 const proxy_uri = new URL('/oauth2/token', import.meta.url)
 
 /**
@@ -65,10 +68,10 @@ export function getAppToken(client_id) {
 export function requestAccessToken(client_id, ...scopes) {
     console.debug('requesting access token')
     const url = new URL('https://id.twitch.tv/oauth2/authorize')
-    url.searchParams.append('response_type','token')
+    url.searchParams.append('response_type', 'token')
     url.searchParams.append('client_id', client_id)
     url.searchParams.append('scope', scopes.join(' '))
-    location.assign(url+'&redirect_uri='+redirect_uri)
+    location.assign(url + '&redirect_uri=' + redirect_uri)
 }
 
 /**
@@ -80,10 +83,10 @@ export function requestAccessToken(client_id, ...scopes) {
 export function requestAuthCode(client_id, ...scopes) {
     console.debug('requesting authorization code')
     const url = new URL('https://id.twitch.tv/oauth2/authorize')
-    url.searchParams.append('response_type','code')
+    url.searchParams.append('response_type', 'code')
     url.searchParams.append('client_id', client_id)
     url.searchParams.append('scope', scopes.join(' '))
-    location.assign(url+'&redirect_uri='+redirect_uri)
+    location.assign(url + '&redirect_uri=' + redirect_uri)
     return new Promise()
 }
 
@@ -127,11 +130,11 @@ export function validateToken(access_token) {
             throw new Error(await response.json())
         }
         /** @type {TwitchToken} */
-        const token=await response.json()
-        token.access_token=access_token
-        token.scope=token.scopes
+        const token = await response.json()
+        token.access_token = access_token
+        token.scope = token.scopes
         delete token.scopes
-        token.token_type='bearer'
+        token.token_type = 'bearer'
         return stamp(token)
     })
 }
@@ -169,25 +172,25 @@ export function refreshToken(client_id, refresh_token) {
  * @param {String} client_id 
  * @returns {TwitchToken}
  */
-export function getUserToken(client_id,...scopes){
-    const params=new URLSearchParams(location.search+'&'+location.hash.substring(1))
-    if(params.has('code')){
-        const code=params.get('code')
-        history.replaceState(null,'',redirect_uri)
-        return exchangeCode(client_id,code)
+export function getUserToken(client_id, ...scopes) {
+    const params = new URLSearchParams(location.search + '&' + location.hash.substring(1))
+    if (params.has('code')) {
+        const code = params.get('code')
+        history.replaceState(null, '', redirect_uri)
+        return exchangeCode(client_id, code)
     }
-    if(params.has('refresh_token')){
-        return refreshToken(client_id,params.get('refresh_token'))
+    if (params.has('refresh_token')) {
+        return refreshToken(client_id, params.get('refresh_token'))
     }
-    if(params.has('access_token')){
+    if (params.has('access_token')) {
         return validateToken(params.get('access_token'))
     }
-    if(params.has('error')){
-        const error_message=params.get('error')+': '+params.get('error_description')
-        history.replaceState(null,'',redirect_uri)
+    if (params.has('error')) {
+        const error_message = params.get('error') + ': ' + params.get('error_description')
+        history.replaceState(null, '', redirect_uri)
         throw new Error(error_message)
     }
-    return requestAuthCode(client_id,...scopes)
+    return requestAuthCode(client_id, ...scopes)
 }
 
 export default getUserToken
