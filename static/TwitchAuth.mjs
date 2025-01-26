@@ -20,7 +20,7 @@ const fetch = fetch_retry(globalThis.fetch, { retries: 10, retryDelay: attempts 
  * @property {String} scope
  */
 
-const redirect_uri = location.href.split('?')[0]
+const redirect_uri = location.origin+location.pathname
 const proxy_uri = new URL('/oauth2/token', import.meta.url)
 
 /**
