@@ -6,6 +6,7 @@
     "dev": "wrangler dev --ip=0.0.0.0"
   },
   "devDependencies": {
+    "@twurple/auth": "^7.2.1",
     "wrangler": "^3.60.3"
   }
 }
