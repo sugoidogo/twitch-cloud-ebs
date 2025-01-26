@@ -16,6 +16,9 @@ function hasScopes(token,...scopes){
     if(!token){
         return false
     }
+    if(!scopes){
+        return true
+    }
     for(const scope of scopes){
         if(!token.scope.includes(scope)){
             return false
@@ -42,9 +45,6 @@ export default class SugoiAuthProvider {
      * @returns {Promise<import("./TwitchAuth.mjs").TwitchToken>}
      */
     async addUser(...scopes){
-        if(hasScopes(this.#token,scopes)){
-            return this.#token
-        }
         this.#token=await TwitchAuth.getUserToken(this.clientId,...scopes).then(getTwurpleProxy)
         return this.#token
     }
@@ -73,6 +73,9 @@ export default class SugoiAuthProvider {
      * @returns {Promise<import("./TwitchAuth.mjs").TwitchToken | null>}
      */
     async getAccessTokenForUser(user,...scopeSets){
+        if((!scopeSets[0]) && (this.#token)){
+            return this.#token
+        }
         for(const scopes of scopeSets){
             if(hasScopes(this.#token,scopes)){
                 return this.#token
