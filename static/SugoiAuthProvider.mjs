@@ -1,5 +1,13 @@
 import TwitchAuth from "./TwitchAuth.mjs";
 
+function getTwurpleProxy(token){
+    return new Proxy(token,{
+        get(target, name, receiver){
+            return target[name.toString().replace(/[A-Z]/g, letter => `_${letter.toLowerCase()}`)]
+        }
+    })
+}
+
 export default class SugoiAuthProvider {
 
     /** @type {TwitchAuth} */
@@ -7,14 +15,6 @@ export default class SugoiAuthProvider {
 
     /** @type {String} */
     clientId;
-
-    static #getTwurpleProxy(token){
-        return new Proxy(token,{
-            get(target, name, receiver){
-                return target[name.toString().replace(/[A-Z]/g, letter => `_${letter.toLowerCase()}`)]
-            }
-        })
-    }
 
     constructor(client_id){
         this.#auth=new TwitchAuth(client_id)
@@ -26,11 +26,11 @@ export default class SugoiAuthProvider {
      * @returns {Promise<import("./TwitchAuth.mjs").TwitchToken>}
      */
     addUser(...scopes){
-        return this.#auth.getToken(...scopes).then(SugoiAuthProvider.#getTwurpleProxy)
+        return this.#auth.getToken(...scopes).then(getTwurpleProxy)
     }
 
     addUserForToken(token){
-        return this.#auth.setToken(token).then(SugoiAuthProvider.#getTwurpleProxy)
+        return this.#auth.setToken(token).then(getTwurpleProxy)
     }
 
     removeUser(){
@@ -49,7 +49,7 @@ export default class SugoiAuthProvider {
                 scopes.add(scope)
             }
         }
-        return this.#auth.getToken(...scopes).then(SugoiAuthProvider.#getTwurpleProxy)
+        return this.#auth.getToken(...scopes).then(getTwurpleProxy)
         .then(token=>{
             if(token.user_id!=user){
                 throw 'got access token for wrong user'
@@ -66,14 +66,14 @@ export default class SugoiAuthProvider {
      * @returns {Promise<import("./TwitchAuth.mjs").TwitchToken>}
      */
     getAnyAccessToken(user){
-        return this.#auth.getToken().then(SugoiAuthProvider.#getTwurpleProxy)
+        return this.#auth.getToken().then(getTwurpleProxy)
         .then(token=>{
             if(token.user_id!=user){
                 throw 'got access token for wrong user'
             }
-            return token.then(SugoiAuthProvider.#getTwurpleProxy)
+            return token.then(getTwurpleProxy)
         }).catch(error=>{
-            return this.#auth.getAppToken().then(SugoiAuthProvider.#getTwurpleProxy)
+            return this.#auth.getAppToken().then(getTwurpleProxy)
         })
     }
 
@@ -94,6 +94,6 @@ export default class SugoiAuthProvider {
         if(token.user_id!=user){
             throw 'got access token for wrong user'
         }
-        return this.#auth.getFreshToken(token).then(SugoiAuthProvider.#getTwurpleProxy)
+        return this.#auth.getFreshToken(token).then(getTwurpleProxy)
     }
 }
