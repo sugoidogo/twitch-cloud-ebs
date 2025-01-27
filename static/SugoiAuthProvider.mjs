@@ -39,7 +39,7 @@ export default class SugoiAuthProvider {
         this.clientId=client_id
     }
 
-    #setToken(token){
+    #setToken=(token)=>{
         this.#token=token
         return token
     }
@@ -86,7 +86,7 @@ export default class SugoiAuthProvider {
                 return this.#token
             }
         }
-        this.#token=this.addUser(...(scopeSets[0]||[])).then(getTwurpleProxy).then(token=>this.#token=token)
+        this.#token=this.addUser(...(scopeSets[0]||[])).then(getTwurpleProxy).then(this.#setToken)
         return this.#token
     }
 
