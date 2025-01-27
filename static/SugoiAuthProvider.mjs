@@ -81,7 +81,7 @@ export default class SugoiAuthProvider {
                 return this.#token
             }
         }
-        this.#token=await this.addUser(...scopeSets[0]).then(getTwurpleProxy)
+        this.#token=await this.addUser(...(scopeSets[0]||[])).then(getTwurpleProxy)
         return this.#token
     }
 
