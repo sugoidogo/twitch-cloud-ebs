@@ -39,13 +39,18 @@ export default class SugoiAuthProvider {
         this.clientId=client_id
     }
 
+    #setToken(token){
+        this.#token=token
+        return token
+    }
+
     /**
      * get a new token
      * @param  {String[]} scopes 
      * @returns {Promise<import("./TwitchAuth.mjs").TwitchToken>}
      */
     async addUser(...scopes){
-        this.#token=await TwitchAuth.getUserToken(this.clientId,...scopes).then(getTwurpleProxy)
+        this.#token=TwitchAuth.getUserToken(this.clientId,...scopes).then(getTwurpleProxy).then(this.#setToken)
         return this.#token
     }
 
@@ -56,10 +61,10 @@ export default class SugoiAuthProvider {
      */
     async addUserForToken(token){
         if(token.refresh_token){
-            this.#token=await TwitchAuth.refreshToken(token.refresh_token).then(getTwurpleProxy)
+            this.#token=TwitchAuth.refreshToken(token.refresh_token).then(getTwurpleProxy).then(this.#setToken)
             return this.#token
         }
-        this.#token=await TwitchAuth.validateToken(token.access_token).then(getTwurpleProxy)
+        this.#token=TwitchAuth.validateToken(token.access_token).then(getTwurpleProxy).then(this.#setToken)
         return this.#token
     }
 
@@ -81,7 +86,7 @@ export default class SugoiAuthProvider {
                 return this.#token
             }
         }
-        this.#token=await this.addUser(...(scopeSets[0]||[])).then(getTwurpleProxy)
+        this.#token=this.addUser(...(scopeSets[0]||[])).then(getTwurpleProxy).then(token=>this.#token=token)
         return this.#token
     }
 
@@ -98,6 +103,9 @@ export default class SugoiAuthProvider {
      * @returns {String[]}
      */
     getCurrentScopesForUser(user){
+        if(!this.#token || this.#token instanceof Promise){
+            return []
+        }
         return this.#token.scope
     }
 
@@ -106,7 +114,7 @@ export default class SugoiAuthProvider {
      * @returns {Promise<import("./TwitchAuth.mjs").TwitchToken>}
      */
     async refreshAccessTokenForUser(user){
-        this.#token=await TwitchAuth.refreshToken(this.#token.refresh_token)
+        this.#token=TwitchAuth.refreshToken(this.#token.refresh_token).then(this.#setToken)
         return this.#token
     }
 }
