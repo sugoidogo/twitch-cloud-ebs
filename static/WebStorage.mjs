@@ -23,7 +23,7 @@ export default class WebStorage {
      * @param {import('@twurple/auth').AuthProvider} auth_provider used to add the authentication header to requests for web storage
      * @param {fetch} fetch defaults to `globalThis.fetch`, allows you to further customize fetch behavior via chaining, for example with `fetch-retry`
      */
-    constructor(auth_provider, fetch = globalThis.fetch) {
+    constructor(auth_provider, fetch = (resource,options)=>{return globalThis.fetch(resource,options)}) {
         this.#fetch = fetch
         this.#auth_provider = auth_provider
         auth_provider.getAccessTokenForUser()
