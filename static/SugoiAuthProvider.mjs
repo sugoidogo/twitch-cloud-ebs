@@ -82,7 +82,7 @@ export default class SugoiAuthProvider {
             return this.#token
         }
         for(const scopes of scopeSets){
-            if(hasScopes(this.#token,scopes)){
+            if(hasScopes(this.#token,...scopes)){
                 return this.#token
             }
         }
