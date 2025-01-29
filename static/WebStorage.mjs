@@ -72,7 +72,7 @@ export default class WebStorage {
                 if (response.status >= 500) {
                     throw new Error(response.statusText + '\n' + await response.text())
                 }
-                this.#cache.put(resource, response)
+                this.#cache.put(resource, response.clone())
                 return response
             }).catch(error => {
                 console.warn(error)
