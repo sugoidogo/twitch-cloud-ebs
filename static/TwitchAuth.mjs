@@ -87,7 +87,7 @@ export function requestAuthCode(client_id, ...scopes) {
     url.searchParams.append('client_id', client_id)
     url.searchParams.append('scope', scopes.join(' '))
     location.assign(url + '&redirect_uri=' + redirect_uri)
-    return new Promise()
+    return new Promise(()=>{})
 }
 
 /**
