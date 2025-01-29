@@ -36,7 +36,7 @@ export default class WebStorage {
      * @param {String | URL} resource 
      * @param {RequestInit} options 
      */
-    async fetch(resource, options) {
+    async fetch(resource, options={}) {
         resource = new URL(resource, this.#origin)
         if (resource.origin == this.#origin) {
             const token = await this.#auth_provider.getAccessTokenForUser()
