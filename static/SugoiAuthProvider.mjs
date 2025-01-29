@@ -40,7 +40,7 @@ export default class SugoiAuthProvider {
     }
 
     #setToken=(token)=>{
-        this.#token=token
+                this.#token=token
         return token
     }
 
@@ -86,7 +86,7 @@ export default class SugoiAuthProvider {
                 return this.#token
             }
         }
-        this.#token=this.addUser(...(scopeSets[0]||[])).then(getTwurpleProxy).then(this.#setToken)
+        this.#token=TwitchAuth.getUserTokenPassive(...(scopeSets[0]||[])).then(getTwurpleProxy).then(this.#setToken)
         return this.#token
     }
 

@@ -172,7 +172,23 @@ export function refreshToken(client_id, refresh_token) {
  * @param {String} client_id 
  * @returns {TwitchToken}
  */
-export function getUserToken(client_id, ...scopes) {
+export async function getUserToken(client_id, ...scopes) {
+    const token=await getUserTokenPassive(client_id, ...scopes)
+    if(!token){
+        return requestAuthCode(client_id, ...scopes)
+    }
+    return token
+}
+
+/**
+ * This function checks the url search parameters and hash for an auth code,
+ * refresh token, access token, or error message, in that order.
+ * https://dev.twitch.tv/docs/authentication/getting-tokens-oauth/#authorization-code-grant-flow
+ * @param {String} client_id 
+ * @returns {TwitchToken}
+ */
+export function getUserTokenPassive(client_id, ...scopes){
+    console.debug('scopes requested:',...scopes)
     const params = new URLSearchParams(location.search + '&' + location.hash.substring(1))
     if (params.has('code')) {
         const code = params.get('code')
@@ -190,7 +206,7 @@ export function getUserToken(client_id, ...scopes) {
         history.replaceState(null, '', redirect_uri)
         throw new Error(error_message)
     }
-    return requestAuthCode(client_id, ...scopes)
+    return null
 }
 
 export default getUserToken
