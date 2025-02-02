@@ -52,7 +52,7 @@ export function getAppToken(client_id) {
         headers: { 'content-type': 'application/x-www-form-urlencoded' }
     }).then(async function (response) {
         if (!response.ok) {
-            throw new Error(await response.json())
+            throw new Error(await response.text())
         }
         const token = await response.json()
         return stamp(token)
@@ -109,7 +109,7 @@ export function exchangeCode(client_id, code) {
         headers: { 'content-type': 'application/x-www-form-urlencoded' }
     }).then(async function (response) {
         if (!response.ok) {
-            throw new Error(await response.json())
+            throw new Error(await response.text())
         }
         const token = await response.json()
         return stamp(token)
@@ -127,7 +127,7 @@ export function validateToken(access_token) {
         headers: { authorization: 'OAuth ' + access_token }
     }).then(async response => {
         if (!response.ok) {
-            throw new Error(await response.json())
+            throw new Error(await response.text())
         }
         /** @type {TwitchToken} */
         const token = await response.json()
@@ -158,7 +158,7 @@ export function refreshToken(client_id, refresh_token) {
         headers: { 'content-type': 'application/x-www-form-urlencoded' }
     }).then(async function (response) {
         if (!response.ok) {
-            throw new Error(await response.json())
+            throw new Error(await response.text())
         }
         return await response.json()
     })
