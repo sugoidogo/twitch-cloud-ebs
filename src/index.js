@@ -203,7 +203,7 @@ async function serve_static(request, env) {
 	}
 	const blob = await response.blob()
 	if(url.pathname.endsWith('js')){
-		headers.append('content-type','text/javascript')
+		headers.set('content-type','text/javascript')
 	}
 	return newResponse(blob)
 }
