@@ -197,15 +197,15 @@ async function ebs(request, env) {
 
 async function serve_static(request, env) {
 	/** @type {Response} */
-	const response = await env.static.fetch(request)
+	let response = await env.static.fetch(request)
 	if (!response.ok) {
 		return response
 	}
-	const blob = await response.blob()
+	response = await response.text()
 	if(url.pathname.endsWith('js')){
 		headers.set('content-type','text/javascript')
 	}
-	return newResponse(blob)
+	return newResponse(response)
 }
 
 export default {
