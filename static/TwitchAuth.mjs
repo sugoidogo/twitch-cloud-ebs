@@ -85,7 +85,7 @@ export function requestAuthCode(client_id, ...scopes) {
     const url = new URL('https://id.twitch.tv/oauth2/authorize')
     url.searchParams.append('response_type', 'code')
     url.searchParams.append('client_id', client_id)
-    url.searchParams.append('scope', scopes.join(' '))
+    url.searchParams.append('scope', scopes.join(' ').trim())
     location.assign(url + '&redirect_uri=' + redirect_uri)
     return new Promise(()=>{})
 }
