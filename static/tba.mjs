@@ -54,7 +54,7 @@ export function set_refresh_timeout(client_id,tokens){
     },tokens.expires_in*999)
 }
 
-export async function get_tokens(client_id,scope=null,redirect_uri=location.origin+location.pathname,auth_return=false){
+export async function get_tokens(client_id,scope='',redirect_uri=location.origin+location.pathname,auth_return=false){
     token=await TwitchAuth.getUserToken(client_id,...scope.split(' ')).then(validate_tokens)
     set_refresh_timeout(client_id,token)
     return token
