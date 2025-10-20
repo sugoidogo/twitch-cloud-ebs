@@ -165,3 +165,7 @@ dist
 .env*
 !.env.example
 .wrangler/
+
+# selflare/typescript build output
+worker.capnp
+public/*.js
