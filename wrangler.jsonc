@@ -31,7 +31,7 @@
 		{
 			"binding": "storage",
 			"bucket_name": "sugoi-web-services",
-			"jurisdiction": "eu",
+			"jurisdiction": "eu"
 		}
 	],
 	"build": {
