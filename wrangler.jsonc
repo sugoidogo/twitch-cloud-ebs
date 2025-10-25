@@ -1,0 +1,39 @@
+/**
+ * For more details on how to configure Wrangler, refer to:
+ * https://developers.cloudflare.com/workers/wrangler/configuration/
+ */
+{
+	"$schema": "node_modules/wrangler/config-schema.json",
+	"name": "twitch-cloud-ebs",
+	"main": "src/index.ts",
+	"compatibility_date": "2025-10-14",
+	"workers_dev": false,
+	"compatibility_flags": [
+		"global_fetch_strictly_public"
+	],
+	"assets": {
+		"directory": "./static"
+	},
+	"observability": {
+		"enabled": true
+	},
+	"placement": {
+		"mode": "smart"
+	},
+	"kv_namespaces": [
+		{
+			"binding": "client_secrets",
+			"id": "bacfae340a2d45428ba085a00773ba99"
+		}
+	],
+	"r2_buckets": [
+		{
+			"binding": "storage",
+			"bucket_name": "sugoi-web-services",
+			"jurisdiction": "eu",
+		}
+	],
+	"build": {
+		"command": "esbuild static/*.ts --outdir=static --bundle --format=esm --minify --sourcemap=inline --sources-content=false --target=es2020"
+	}
+}

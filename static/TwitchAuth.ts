@@ -1,27 +1,25 @@
-import fetch_retry from 'https://cdn.jsdelivr.net/npm/fetch-retry/+esm'
+import fetch_retry from 'fetch-retry'
 const fetch = fetch_retry(globalThis.fetch, {
     retries: 10,
     retryDelay: attempts => attempts * 1000
 })
 
-/**
- * @typedef {Object} TwitchToken
- * @property {String} access_token
- * @property {Number} expires_in
- * @property {Number} obtainment_timestamp
- * @property {String} token_type
- * @property {Number} [user_id]
- * @property {Array<String>} [scope]
- * @property {String} [refresh_token]
- * @property {String} [login]
- * @property {String} [client_id]
- */
+export interface TwitchToken {
+    access_token: string
+    expires_in: number
+    obtainment_timestamp: number
+    token_type: string
+    user_id?: number
+    scope?: Array<string>
+    refresh_token?: string
+    login?: string
+    client_id?: string
+}
 
-/**
- * @typedef {Object} AuthCode
- * @property {String} code
- * @property {String} scope
- */
+export interface AuthCode {
+    code: string
+    scope: string
+}
 
 const redirect_uri = location.origin + location.pathname
 const proxy_uri = new URL('/oauth2/token', import.meta.url)
@@ -31,17 +29,17 @@ const proxy_uri = new URL('/oauth2/token', import.meta.url)
  * @param {TwitchToken} token 
  * @returns {TwitchToken}
  */
-function stamp(token) {
+function stamp(token: TwitchToken): TwitchToken {
     token.obtainment_timestamp = Date.now()
     return token
 }
 
 /**
  * https://dev.twitch.tv/docs/authentication/getting-tokens-oauth/#client-credentials-grant-flow
- * @param {String} client_id 
+ * @param {string} client_id 
  * @returns {Promise<TwitchToken>}
  */
-export function getAppToken(client_id) {
+export function getAppToken(client_id: string): Promise<TwitchToken> {
     const searchParams = new URLSearchParams({
         client_id: client_id,
         grant_type: 'client_credentials'
@@ -61,11 +59,11 @@ export function getAppToken(client_id) {
 
 /**
  * https://dev.twitch.tv/docs/authentication/getting-tokens-oauth/#implicit-grant-flow
- * @param {String} client_id 
- * @param {Array<String>|String} scopes 
+ * @param {string} client_id 
+ * @param {Array<string>|string} scopes 
  * @returns {Promise<AuthCode>}
  */
-export function requestAccessToken(client_id, ...scopes) {
+export function requestAccessToken(client_id: string, ...scopes: Array<string>) {
     console.debug('requesting access token')
     const url = new URL('https://id.twitch.tv/oauth2/authorize')
     url.searchParams.append('response_type', 'token')
@@ -76,11 +74,11 @@ export function requestAccessToken(client_id, ...scopes) {
 
 /**
  * https://dev.twitch.tv/docs/authentication/getting-tokens-oauth/#get-the-user-to-authorize-your-app
- * @param {String} client_id 
- * @param {Array<String>|String} scopes 
+ * @param {string} client_id 
+ * @param {Array<string>|string} scopes 
  * @returns {Promise<AuthCode>}
  */
-export function requestAuthCode(client_id, ...scopes) {
+export function requestAuthCode(client_id: string, ...scopes: Array<string>): Promise<any> {
     console.debug('requesting authorization code')
     const url = new URL('https://id.twitch.tv/oauth2/authorize')
     url.searchParams.append('response_type', 'code')
@@ -92,11 +90,11 @@ export function requestAuthCode(client_id, ...scopes) {
 
 /**
  * https://dev.twitch.tv/docs/authentication/getting-tokens-oauth/#use-the-authorization-code-to-get-a-token
- * @param {String} client_id 
- * @param {String} code 
+ * @param {string} client_id 
+ * @param {string} code 
  * @returns {Promise<TwitchToken>}
  */
-export function exchangeCode(client_id, code) {
+export function exchangeCode(client_id: string, code: string): Promise<TwitchToken> {
     console.debug('exchanging authorization code')
     const searchParams = new URLSearchParams({
         client_id: client_id,
@@ -118,10 +116,10 @@ export function exchangeCode(client_id, code) {
 
 /**
  * https://dev.twitch.tv/docs/authentication/validate-tokens/#how-to-validate-a-token
- * @param {String} access_token 
+ * @param {string} access_token 
  * @returns {TwitchToken}
  */
-export function validateToken(access_token) {
+export async function validateToken(access_token: string): Promise<TwitchToken> {
     console.debug('validating token')
     return fetch('https://id.twitch.tv/oauth2/validate', {
         headers: { authorization: 'OAuth ' + access_token }
@@ -130,7 +128,7 @@ export function validateToken(access_token) {
             throw new Error(await response.text())
         }
         /** @type {TwitchToken} */
-        const token = await response.json()
+        const token: any = await response.json()
         token.access_token = access_token
         token.scope = token.scopes
         delete token.scopes
@@ -141,11 +139,11 @@ export function validateToken(access_token) {
 
 /**
  * https://dev.twitch.tv/docs/authentication/refresh-tokens/#how-to-use-a-refresh-token
- * @param {String} client_id 
- * @param {String} refresh_token 
+ * @param {string} client_id 
+ * @param {string} refresh_token 
  * @returns {Promise<TwitchToken>}
  */
-export function refreshToken(client_id, refresh_token) {
+export function refreshToken(client_id: string, refresh_token: string): Promise<TwitchToken> {
     console.debug('refreshing token')
     const searchParams = new URLSearchParams({
         client_id: client_id,
@@ -169,10 +167,10 @@ export function refreshToken(client_id, refresh_token) {
  * refresh token, access token, or error message, in that order,
  * and if it finds none of those, starts the auth code grant flow.
  * https://dev.twitch.tv/docs/authentication/getting-tokens-oauth/#authorization-code-grant-flow
- * @param {String} client_id 
+ * @param {string} client_id 
  * @returns {TwitchToken}
  */
-export async function getUserToken(client_id, ...scopes) {
+export async function getUserToken(client_id: string, ...scopes): Promise<TwitchToken> {
     const token=await getUserTokenPassive(client_id, ...scopes)
     if(!token){
         return requestAuthCode(client_id, ...scopes)
@@ -184,10 +182,10 @@ export async function getUserToken(client_id, ...scopes) {
  * This function checks the url search parameters and hash for an auth code,
  * refresh token, access token, or error message, in that order.
  * https://dev.twitch.tv/docs/authentication/getting-tokens-oauth/#authorization-code-grant-flow
- * @param {String} client_id 
+ * @param {string} client_id 
  * @returns {TwitchToken}
  */
-export function getUserTokenPassive(client_id, ...scopes){
+export async function getUserTokenPassive(client_id: string, ...scopes): Promise<TwitchToken>{
     console.debug('scopes requested:',...scopes)
     const params = new URLSearchParams(location.search + '&' + location.hash.substring(1))
     if (params.has('code')) {
