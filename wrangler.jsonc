@@ -34,6 +34,6 @@
 		}
 	],
 	"build": {
-		"command": "esbuild static/*.ts --outdir=static --bundle --format=esm --minify --sourcemap=inline --sources-content=false --target=es2020"
+		"command": "esbuild static_src/*.ts --outdir=static --bundle --format=esm --minify --sourcemap --target=es2020"
 	}
 }
