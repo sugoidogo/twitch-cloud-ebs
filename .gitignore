@@ -171,3 +171,8 @@ dist
 worker.capnp
 docker-compose.yml
 Dockerfile
+
+# typescript output
+
+static/*.js
+static/*.js.map
