@@ -25,7 +25,7 @@ the WebStorage module can be used to cache fetched resources from anywhere, but 
 ```javascript
 import SugoiAuthProvider from 'https://ebs.domain.com/SugoiAuthProvider.js'
 import WebStorage from 'https://ebs.domain.com/WebStorage.js'
-import { ApiClient } from '@twurple/api';
+import { ApiClient } from 'https://cdn.jsdelivr.net/npm/@twurple/api@7/+esm';
 
 const authProvicder=new SugoiAuthProvider('your-client-id')
 const webStorage=new WebStorage(authProvider)
